@@ -1,0 +1,3 @@
+[servers]
+centos.my ansible_ssh_host=178.154.204.195
+ubuntu.my ansible_ssh_host=158.160.35.187
