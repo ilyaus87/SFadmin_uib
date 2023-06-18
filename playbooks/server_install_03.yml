@@ -1,0 +1,90 @@
+---
+- name: Установка и запуск сервисов на третьем сервере
+  hosts: ubuntu.my
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install and configure nginx
+      apt:
+        name: nginx
+        state: present
+      notify:
+        - start nginx
+
+    - name: Install and configure bind
+      apt:
+        name: bind9
+        state: present
+
+    - name: Install mail
+      apt:
+        name:
+          - postfix
+          - dovecot-core
+          - dovecot-imapd
+          - dovecot-pop3d
+          - roundcube
+        state: present
+      notify:
+        - start postfix
+        - start dovecot
+
+    - name: Copy package files
+      copy:
+        src: "/home/yamrsmokey/soft/filebeat-8.6.2-amd64.deb"
+        dest: "/tmp/filebeat-8.6.2-amd64.deb"
+        mode: '0644'
+      register: copy_result
+
+    - name: Debug
+      debug:
+        var: copy_result
+ 
+    - name: Install packages
+      apt:
+        deb: "/tmp/filebeat-8.6.2-amd64.deb"
+        state: present
+      notify:
+        - start filebeat
+
+    - name: Start and enable services
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - nginx
+        - bind9
+        - postfix
+        - dovecot
+        - filebeat
+
+  handlers:
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
+
+    - name: Start postfix
+      service:
+        name: postfix
+        state: restarted
+
+    - name: Start dovecot
+      service:
+        name: dovecot 
+        state: restarted
+
+    - name: Start filebeat
+      service:
+        name: filebeat
+        state: restarted
